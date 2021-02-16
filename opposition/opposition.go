@@ -4,16 +4,18 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
 const nonPrefix = "non-"
 
 var depthFlag int
+var cache = map[string]string{}
 
 func init() {
 
-	flag.IntVar(&depthFlag, "d", 0, "Depth")
+	flag.IntVar(&depthFlag, "d", 16, "Depth")
 }
 
 func tabPrint(depthStr, str string) int {
@@ -36,6 +38,14 @@ func non(x string) string {
 
 func A(s, p string, depthStr string) {
 	str := fmt.Sprintf("All %s is %s", s, p)
+
+	idx, found := cache[str]
+	if found {
+		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
+		return
+	}
+	cache[str] = depthStr
+
 	depth := tabPrint(depthStr, str)
 	if depth >= depthFlag {
 		return
@@ -54,6 +64,14 @@ func A(s, p string, depthStr string) {
 
 func E(s, p string, depthStr string) {
 	str := fmt.Sprintf("No %s is %s", s, p)
+
+	idx, found := cache[str]
+	if found {
+		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
+		return
+	}
+	cache[str] = depthStr
+
 	depth := tabPrint(depthStr, str)
 	if depth >= depthFlag {
 		return
@@ -71,8 +89,15 @@ func E(s, p string, depthStr string) {
 }
 
 func I(s, p string, depthStr string) {
-
 	str := fmt.Sprintf("Some %s is %s", s, p)
+
+	idx, found := cache[str]
+	if found {
+		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
+		return
+	}
+	cache[str] = depthStr
+
 	depth := tabPrint(depthStr, str)
 	if depth >= depthFlag {
 		return
@@ -92,6 +117,14 @@ func I(s, p string, depthStr string) {
 
 func O(s, p string, depthStr string) {
 	str := fmt.Sprintf("Some %s is not %s", s, p)
+
+	idx, found := cache[str]
+	if found {
+		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
+		return
+	}
+	cache[str] = depthStr
+
 	depth := tabPrint(depthStr, str)
 	if depth >= depthFlag {
 		return
@@ -123,6 +156,20 @@ func opposition(prop, s, p string) {
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown Proposition %s\n", prop)
 		os.Exit(2)
+	}
+
+	rch := map[string]string{}
+	idxs := []string{}
+	for k, v := range cache {
+		idxs = append(idxs, v)
+		rch[v] = k
+		//fmt.Printf("%-16s %s\n", v, k)
+	}
+
+	fmt.Printf("\n=== %d Valid Propositions ===\n", len(cache))
+	sort.Strings(idxs)
+	for _, idx := range idxs {
+		fmt.Printf("%-16s %s\n", idx, rch[idx])
 	}
 }
 
