@@ -36,9 +36,12 @@ func non(x string) string {
 	return nonPrefix + x
 }
 
-func A(s, p string, depthStr string) {
-	str := fmt.Sprintf("All %s is %s", s, p)
+func astr(s, p string) string {
+	return fmt.Sprintf("All %s is %s", s, p)
+}
 
+func A(s, p string, depthStr string) {
+	str := astr(s, p)
 	idx, found := cache[str]
 	if found {
 		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
@@ -62,9 +65,12 @@ func A(s, p string, depthStr string) {
 
 }
 
-func E(s, p string, depthStr string) {
-	str := fmt.Sprintf("No %s is %s", s, p)
+func estr(s, p string) string {
+	return fmt.Sprintf("No %s is %s", s, p)
+}
 
+func E(s, p string, depthStr string) {
+	str := estr(s, p)
 	idx, found := cache[str]
 	if found {
 		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
@@ -88,8 +94,12 @@ func E(s, p string, depthStr string) {
 
 }
 
+func istr(s, p string) string {
+	return fmt.Sprintf("Some %s is %s", s, p)
+}
+
 func I(s, p string, depthStr string) {
-	str := fmt.Sprintf("Some %s is %s", s, p)
+	str := istr(s, p)
 
 	idx, found := cache[str]
 	if found {
@@ -115,8 +125,11 @@ func I(s, p string, depthStr string) {
 
 }
 
+func ostr(s, p string) string {
+	return fmt.Sprintf("Some %s is not %s", s, p)
+}
 func O(s, p string, depthStr string) {
-	str := fmt.Sprintf("Some %s is not %s", s, p)
+	str := ostr(s, p)
 
 	idx, found := cache[str]
 	if found {
