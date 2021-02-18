@@ -12,6 +12,7 @@ const nonPrefix = "non-"
 
 var depthFlag int
 var cache = map[string]string{}
+var invalidCache = map[string]string{}
 
 func init() {
 
@@ -29,6 +30,30 @@ func tabPrint(depthStr, str string) int {
 	return depth
 }
 
+func inCache(depthStr, str string) bool {
+	idx, found := cache[str]
+	if found {
+		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
+		return true
+	}
+
+	cache[str] = depthStr
+
+	return false
+}
+
+func inInvalidCache(depthStr, str, hint string) bool {
+	idx, found := invalidCache[str]
+	if found {
+		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]%s", str, idx, hint))
+		return true
+	}
+
+	invalidCache[str] = depthStr + hint
+
+	return false
+}
+
 func non(x string) string {
 	if strings.HasPrefix(x, nonPrefix) {
 		return strings.TrimPrefix(x, nonPrefix)
@@ -42,20 +67,25 @@ func astr(s, p string) string {
 
 func A(s, p string, depthStr string) {
 	str := astr(s, p)
-	idx, found := cache[str]
-	if found {
-		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
+
+	if inCache(depthStr, str) {
 		return
 	}
-	cache[str] = depthStr
 
 	depth := tabPrint(depthStr, str)
 	if depth >= depthFlag {
 		return
 	}
 
-	// Converse
-	I(p, s, depthStr+".1")
+	// Converse, by limitation
+	I(p, s, depthStr+".1L")
+	// Converse, Invalid
+	invalidStr := astr(p, s)
+	invalidIdx := depthStr + ".1X"
+	hint := " [Conversion not valid]"
+	if !inInvalidCache(invalidIdx, invalidStr, hint) {
+		tabPrint(invalidIdx, invalidStr+hint)
+	}
 
 	// Obverse
 	E(s, non(p), depthStr+".2")
@@ -71,12 +101,18 @@ func estr(s, p string) string {
 
 func E(s, p string, depthStr string) {
 	str := estr(s, p)
-	idx, found := cache[str]
-	if found {
-		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
+
+	if inCache(depthStr, str) {
 		return
 	}
-	cache[str] = depthStr
+	/*
+		idx, found := cache[str]
+		if found {
+			tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
+			return
+		}
+		cache[str] = depthStr
+	*/
 
 	depth := tabPrint(depthStr, str)
 	if depth >= depthFlag {
@@ -89,8 +125,15 @@ func E(s, p string, depthStr string) {
 	// Obverse
 	A(s, non(p), depthStr+".2")
 
-	// Conrapositive
-	O(non(p), non(s), depthStr+".3")
+	// Conrapositive, by limitation
+	O(non(p), non(s), depthStr+".3L")
+	// Conrapositive, not valid
+	invalidStr := estr(non(p), non(s))
+	invalidIdx := depthStr + ".3X"
+	hint := " [Contraposition not valid]"
+	if !inInvalidCache(invalidIdx, invalidStr, hint) {
+		tabPrint(invalidIdx, invalidStr+hint)
+	}
 
 }
 
@@ -101,11 +144,10 @@ func istr(s, p string) string {
 func I(s, p string, depthStr string) {
 	str := istr(s, p)
 
-	idx, found := cache[str]
-	if found {
-		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
+	if inCache(depthStr, str) {
 		return
 	}
+
 	cache[str] = depthStr
 
 	depth := tabPrint(depthStr, str)
@@ -119,9 +161,13 @@ func I(s, p string, depthStr string) {
 	// Obverse
 	O(s, non(p), depthStr+".2")
 
-	// Conrapositive
-	// TODO
-	tabPrint(depthStr+".3", "[Contraposition not valid]")
+	// Conrapositive, not valid
+	invalidStr := istr(non(p), non(s))
+	invalidIdx := depthStr + ".3"
+	hint := " [Contraposition not valid]"
+	if !inInvalidCache(invalidIdx, invalidStr, hint) {
+		tabPrint(invalidIdx, invalidIdx+hint)
+	}
 
 }
 
@@ -131,22 +177,22 @@ func ostr(s, p string) string {
 func O(s, p string, depthStr string) {
 	str := ostr(s, p)
 
-	idx, found := cache[str]
-	if found {
-		tabPrint(depthStr, fmt.Sprintf("%s [Dup %s]", str, idx))
+	if inCache(depthStr, str) {
 		return
 	}
-	cache[str] = depthStr
 
 	depth := tabPrint(depthStr, str)
 	if depth >= depthFlag {
 		return
 	}
 
-	// Converse
-	// TODO
-	tabPrint(depthStr+".1", "[Conversion not valid]")
-	//A(s, p, depthStr+".1")
+	// Converse, not valid
+	invalidStr := ostr(p, s)
+	invalidIdx := depthStr + ".1"
+	hint := " [Conversion not valid]"
+	if !inInvalidCache(invalidIdx, invalidStr, hint) {
+		tabPrint(invalidIdx, invalidStr+hint)
+	}
 
 	// Obverse
 	I(s, non(p), depthStr+".2")
@@ -182,7 +228,18 @@ func opposition(prop, s, p string) {
 	fmt.Printf("\n=== %d Valid Propositions ===\n", len(cache))
 	sort.Strings(idxs)
 	for _, idx := range idxs {
-		fmt.Printf("%-16s %s\n", idx, rch[idx])
+		fmt.Printf("%-20s %s\n", idx, rch[idx])
+	}
+
+	fmt.Printf("\n=== Undetermined Propositions ===\n")
+
+	for k, v := range invalidCache {
+		_, found := cache[k]
+		if found {
+			continue
+			//fmt.Printf(" [Dup %s, Actually Valid]", idx)
+		}
+		fmt.Printf("%-40s %s\n", v, k)
 	}
 }
 
